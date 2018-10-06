@@ -1,0 +1,27 @@
+service: luftdaten-skill
+
+provider:
+  name: aws
+  runtime: python3.6
+  versionFunctions: false
+
+functions:
+  skill:
+    handler: skill.handler
+
+events:
+  - alexaSkill: amzn1.ask.skill.c4d3b247-47be-4f21-805c-7b360c17a58b
+
+plugins:
+  - serverless-python-requirements
+custom:
+  pythonRequirements:
+    dockerizePip: false
+
+package:
+  individually: true
+  exclude:
+    - ./**
+  include:
+    - skill/**
+    - items/**
