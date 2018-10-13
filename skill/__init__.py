@@ -3,12 +3,12 @@ from . import intents
 
 def on_session_started(session_started_request, session):
     print("on_session_started")
-    pass
+    return {}
 
 
 def on_session_ended(session_ended_request, session):
     print("on_session_ended")
-    pass
+    return {}
 
 
 def on_intent(request, session):
@@ -23,6 +23,7 @@ def on_intent(request, session):
         "AMAZON.CancelIntent": intents.stop,
         "AMAZON.HelpIntent": intents.help,
         "AMAZON.NavigateHomeIntent": intents.launch,
+        "AMAZON.NoIntent": intents.stop,
         "AMAZON.StopIntent": intents.stop
     }
 
@@ -30,16 +31,19 @@ def on_intent(request, session):
 
 
 def handler(event, context):
-    print(event["request"])
+    print("IN:", event["request"])
 
     if event["session"]["new"]:
-        on_session_started({"requestId": event["request"]["requestId"]}, event["session"])
+        response = on_session_started({"requestId": event["request"]["requestId"]}, event["session"])
 
     if event["request"]["type"] == "LaunchRequest":
-        return intents.launch(event["request"], event["session"])
+        response = intents.launch(event["request"], event["session"])
 
     elif event["request"]["type"] == "IntentRequest":
-        return on_intent(event["request"], event["session"])
+        response = on_intent(event["request"], event["session"])
 
     elif event["request"]["type"] == "SessionEndedRequest":
-        return on_session_ended({"requestId": event["request"]["requestId"]}, event["session"])
+        response = on_session_ended({"requestId": event["request"]["requestId"]}, event["session"])
+
+    print("OUT:", response)
+    return response
