@@ -80,7 +80,21 @@ def location_value(request, session):
 
 
 def my_sensor_value(request, session):
-    return question("Diese Funktion wird aktuell noch entwickelt. My Sensor Value Intent")
+    user = db.get_user(session["user"]["userId"])
+
+    if user.get("sensor_id"):
+        sensor_id = int(user["sensor_id"])
+        value = luftdaten_service.get_value(sensor_id)
+        if value:
+            speech = f"Die Feinstaubbelastung an deinem Sensor {sensor_id} liegt bei {value} Mikrogramm."
+        else:
+            speech = (f"Ich kann Deinen Sensor {sensor_id} aktuell leider nicht erreichen. "
+                      "Bitte überprüfe, ob er eingeschaltet ist und Daten sendet.")
+    else:
+        return question(("Du hast noch keinen Sensor eingerichtet. "
+                         "Um das zu tun, sage einfach: Verwende meinen eigenen Feinstaubsensor."))
+
+    return question(f"{speech} Kann ich sonst noch etwas für Dich tun?")
 
 
 def my_location_value(request, session):
