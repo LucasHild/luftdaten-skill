@@ -1,4 +1,5 @@
-from . import intents
+from . import db, intents
+from .helpers import question
 
 
 def on_session_started(session_started_request, session):
@@ -11,7 +12,7 @@ def on_session_ended(session_ended_request, session):
     return {}
 
 
-def on_intent(request, session):
+def on_intent(request, session, context):
     intent_name = request["intent"]["name"]
 
     intent_mapper = {
@@ -27,20 +28,30 @@ def on_intent(request, session):
         "AMAZON.StopIntent": intents.stop
     }
 
-    return intent_mapper[intent_name](request, session)
+    return intent_mapper[intent_name](request, session, context)
 
 
 def handler(event, context):
-    print("IN:", event["request"])
+    print("IN:", event)
+
+    # New user
+    user = db.get_user(event["session"]["user"]["userId"])
+    if not user:
+        db.add_user(event["session"]["user"]["userId"])
+        return question((
+            "Willkommen zum Luftdaten Skill. Standardmäßig verwende ich die Position deines Echos, "
+            "um Dir die Feinstaubbelastung anzugeben. "
+            "Du kannst mich aber auch einfach nach einer anderen Stadt fragen. Falls Du einen eigenen Sensor hast, "
+            "kannst Du diesen auch verwenden. Sage dafür einfach: Verwende meinen eigenen Feinstaubsensor."))
 
     if event["session"]["new"]:
         response = on_session_started({"requestId": event["request"]["requestId"]}, event["session"])
 
     if event["request"]["type"] == "LaunchRequest":
-        response = intents.launch(event["request"], event["session"])
+        response = intents.launch(event["request"], event["session"], event["context"])
 
     elif event["request"]["type"] == "IntentRequest":
-        response = on_intent(event["request"], event["session"])
+        response = on_intent(event["request"], event["session"], event["context"])
 
     elif event["request"]["type"] == "SessionEndedRequest":
         response = on_session_ended({"requestId": event["request"]["requestId"]}, event["session"])

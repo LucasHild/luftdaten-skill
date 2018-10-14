@@ -1,11 +1,10 @@
-from . import db
+from . import db, luftdaten_service, utils, alexa_service
 from .helpers import answer, question, dialog_delegate, dialog_elicit
-from . import luftdaten_service
-from . import utils
 
 
-def launch(request, session):
+def launch(request, session, context):
     user = db.get_user(session["user"]["userId"])
+    card = None
 
     if user.get("sensor_id"):
         sensor_id = int(user["sensor_id"])
@@ -15,26 +14,27 @@ def launch(request, session):
         else:
             speech = (f"Ich kann Deinen Sensor {sensor_id} aktuell leider nicht erreichen. "
                       "Bitte überprüfe, ob er eingeschaltet ist und Daten sendet.")
+
     else:
-        # TODO: Use location API if sensor id not in db
-        location = "Stuttgart"
-        value = 0
-        speech = f"Die Feinstaubbelastung in {location} liegt aktuell bei {value} Mikrogramm."
+        location = alexa_service.get_user_location(context["System"])
+        if location:
+            sensor = utils.closest_sensor(location)
+            value = luftdaten_service.get_value(sensor["id"])
+            speech = f"Die Feinstaubbelastung in Deiner Umgebung liegt aktuell bei {value} Mikrogramm."
+        else:
+            card = {
+                "type": "AskForPermissionsConsent",
+                "permissions": [
+                    "read::alexa:device:all:address"
+                ]
+            }
+            speech = ("Bevor ich auf Deinen Standort zugreifen kann brauche ich Zugriff auf Deinen Standort. "
+                      "Öffne dafür die Alexa App und gib dem Skill angefragte Berechtigung.")
 
-    # New user
-    if not user:
-        db.add_user(session["user"]["userId"])
-
-        return question((
-            f"Willkommen zum Luftdaten Skill. {speech} Standardmäßig verwende ich die Position deines Echos, "
-            "um Dir die Feinstaubbelastung anzugeben. "
-            "Du kannst mich aber auch einfach nach einer anderen Stadt fragen. Falls Du einen eigenen Sensor hast, "
-            "kannst Du diesen auch verwenden. Sage dafür einfach: Verwende meinen eigenen Feinstaubsensor."))
-
-    return question(f"{speech} Kann ich sonst noch etwas für Dich tun?")
+    return question(f"{speech} Kann ich sonst noch etwas für Dich tun?", card=card)
 
 
-def setup_sensor(request, session):
+def setup_sensor(request, session, context):
     if request["dialogState"] == "STARTED":
         return dialog_delegate()
     elif request["dialogState"] == "IN_PROGRESS":
@@ -71,15 +71,15 @@ def setup_sensor(request, session):
         f"{utils.ssml_id} {sensor_id} zurück.</speak>"), ssml=False)
 
 
-def sensor_value(request, session):
+def sensor_value(request, session, context):
     return question("Diese Funktion wird aktuell noch entwickelt. Sensor Value Intent")
 
 
-def location_value(request, session):
+def location_value(request, session, context):
     return question("Diese Funktion wird aktuell noch entwickelt. Location Value Intent")
 
 
-def my_sensor_value(request, session):
+def my_sensor_value(request, session, context):
     user = db.get_user(session["user"]["userId"])
 
     if user.get("sensor_id"):
@@ -97,13 +97,13 @@ def my_sensor_value(request, session):
     return question(f"{speech} Kann ich sonst noch etwas für Dich tun?")
 
 
-def my_location_value(request, session):
+def my_location_value(request, session, context):
     return question("Diese Funktion wird aktuell noch entwickelt. My Location Value Intent")
 
 
-def stop(request, session):
+def stop(request, session, context):
     return answer("Bis bald.")
 
 
-def help(request, session):
+def help(request, session, context):
     return question("Diese Funktion wird aktuell noch entwickelt.")
