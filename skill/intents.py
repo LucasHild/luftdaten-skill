@@ -71,14 +71,6 @@ def setup_sensor(request, session, context):
         f"{utils.ssml_id} {sensor_id} zurück.</speak>"), ssml=False)
 
 
-def sensor_value(request, session, context):
-    return question("Diese Funktion wird aktuell noch entwickelt. Sensor Value Intent")
-
-
-def location_value(request, session, context):
-    return question("Diese Funktion wird aktuell noch entwickelt. Location Value Intent")
-
-
 def my_sensor_value(request, session, context):
     user = db.get_user(session["user"]["userId"])
 
@@ -95,10 +87,6 @@ def my_sensor_value(request, session, context):
                          "Um das zu tun, sage einfach: Verwende meinen eigenen Feinstaubsensor."))
 
     return question(f"{speech} Kann ich sonst noch etwas für Dich tun?")
-
-
-def my_location_value(request, session, context):
-    return question("Diese Funktion wird aktuell noch entwickelt. My Location Value Intent")
 
 
 def stop(request, session, context):
